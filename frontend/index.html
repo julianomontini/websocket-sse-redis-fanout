@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>long-lived-connections — test frontend</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>long-lived-connections</h1>
+    <p class="subtitle">
+      Minimal test frontend — connects to <code>client-api</code> over SSE and
+      Socket.IO, and can trigger messages via <code>worker</code>. Used to see
+      graceful shutdown working: kill/rolling-restart a client-api instance
+      and watch this page reconnect on its own. See the README.
+    </p>
+  </header>
+
+  <main>
+    <!-- ============================ Config ============================ -->
+    <section id="config">
+      <h2>Config</h2>
+      <p class="hint">
+        Defaults match the <code>docker compose</code> port mappings and the
+        <code>kubectl port-forward</code> commands in the README — leave them
+        as-is unless you've mapped different local ports.
+      </p>
+      <div class="row">
+        <label for="clientApiUrl">client-api URL</label>
+        <input id="clientApiUrl" type="text" value="http://localhost:3000" />
+      </div>
+      <div class="row">
+        <label for="workerUrl">worker URL</label>
+        <input id="workerUrl" type="text" value="http://localhost:3001" />
+      </div>
+      <div class="row">
+        <label for="userId">userId</label>
+        <input id="userId" type="text" value="1234" />
+      </div>
+    </section>
+
+    <!-- ============================ Connections ============================ -->
+    <section id="connections">
+      <h2>Connections</h2>
+
+      <div class="transport" id="sse-transport">
+        <div class="transport-header">
+          <h3>SSE</h3>
+          <span id="sse-status" class="status status-disconnected">disconnected</span>
+        </div>
+        <div class="row">
+          <button id="sse-connect">Connect</button>
+          <button id="sse-disconnect">Disconnect</button>
+        </div>
+      </div>
+
+      <div class="transport" id="ws-transport">
+        <div class="transport-header">
+          <h3>Socket.IO</h3>
+          <span id="ws-status" class="status status-disconnected">disconnected</span>
+        </div>
+        <div class="row">
+          <button id="ws-connect">Connect</button>
+          <button id="ws-disconnect">Disconnect</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ Publish ============================ -->
+    <section id="publish">
+      <h2>Publish (via worker)</h2>
+      <div class="row">
+        <label for="pub-message">message</label>
+        <input id="pub-message" type="text" value="hello" />
+      </div>
+      <div class="row">
+        <label for="pub-target">target userId (blank = broadcast)</label>
+        <input id="pub-target" type="text" placeholder="e.g. 1234" />
+      </div>
+      <div class="row">
+        <button id="pub-send">Send</button>
+      </div>
+    </section>
+
+    <!-- ============================ Log ============================ -->
+    <section id="log-section">
+      <div class="log-header">
+        <h2>Log</h2>
+        <button id="log-clear">Clear</button>
+      </div>
+      <pre id="log"></pre>
+    </section>
+  </main>
+
+  <!-- socket.io-client UMD build from the official CDN. Sets a global `io`
+       function; socket.js (below) uses it directly — no bundler involved. -->
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+
+  <!-- Our own code is plain ES modules — the browser resolves the imports
+       natively, no build step. app.js is the entry point that wires
+       sse.js / socket.js / publish.js to the DOM. -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

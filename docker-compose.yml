@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   redis:
     image: redis:7-alpine
@@ -10,16 +8,27 @@ services:
   client-api:
     build:
       context: ./client-api
-    container_name: llc-client-api
-    ports:
-      - "3000:3000"
+    # Deliberately minimal here: no container_name, ports, volumes or
+    # command override. That makes this service "replica-safe" as-is - a
+    # fixed name/port can only be held by one container, and (found the
+    # hard way) Compose overrides can't clear an inherited list back to
+    # empty, so the only reliable way to keep this file scalable was to
+    # never put those here to begin with. Two places build on top of this:
+    #   - docker-compose.override.yml adds them back for the normal
+    #     single-instance dev experience (hot reload, fixed name/port) -
+    #     Compose auto-merges that file for plain `docker compose up`, no
+    #     -f needed, so nothing changes for everyday use.
+    #   - docker-compose.replicas.yml runs this service scaled instead, via
+    #     explicit -f flags that skip the .override.yml above. See its
+    #     comment, and the README's "Multiple replicas via Docker Compose".
+    # No command: here either, so it falls through to the image's default
+    # CMD (`node dist/index.js`, see client-api/Dockerfile) - the
+    # production-style command the graceful shutdown handler needs to
+    # actually run to completion on SIGTERM.
     environment:
       - PORT=3000
       - REDIS_URL=redis://redis:6379
       - DEBUG=socket.io:adapter,socket.io-redis
-    volumes:
-      - ./client-api:/app
-      - /app/node_modules
     depends_on:
       - redis
 
@@ -27,6 +36,7 @@ services:
     build:
       context: ./worker
     container_name: llc-worker
+    command: ["npm", "run", "dev"] # see client-api's command notes above
     ports:
       - "3001:3001"
     environment:
@@ -37,3 +47,13 @@ services:
       - /app/node_modules
     depends_on:
       - redis
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: llc-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - client-api
+      - worker

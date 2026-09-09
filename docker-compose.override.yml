@@ -1,0 +1,18 @@
+# Auto-merged by plain `docker compose up` - Compose loads this file
+# together with docker-compose.yml whenever no -f flag is given, which is
+# exactly the point: the base file stays minimal/scale-safe (see its
+# client-api comment, and docker-compose.replicas.yml), and this layers the
+# normal single-instance dev experience on top by default, so nothing
+# changes for everyday use.
+#
+# docker-compose.replicas.yml is loaded via explicit -f flags instead,
+# which makes Compose skip auto-loading this file entirely.
+services:
+  client-api:
+    container_name: llc-client-api
+    command: ["npm", "run", "dev"] # hot-reload dev server, see client-api/Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./client-api:/app
+      - /app/node_modules

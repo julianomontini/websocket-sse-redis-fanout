@@ -1,0 +1,25 @@
+# Opt-in override: run several client-api replicas behind a small load
+# balancer, to test graceful shutdown / a rolling restart. See the README's
+# "Multiple replicas via Docker Compose" section for the full walkthrough.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.replicas.yml \
+#     up -d --build --scale client-api=3
+#
+# Explicit -f flags make Compose skip auto-loading docker-compose.override.yml
+# (the file that normally adds a fixed name/port/hot-reload for client-api),
+# so client-api here is exactly the base file's definition - already
+# replica-safe by design, and already running its production-style command
+# (see the base file's client-api comment) - nothing to override on it at
+# all. The only thing this file adds is the load balancer, which becomes
+# the new single stable entrypoint on the same host port (3000) the
+# frontend already expects, so nothing there needs reconfiguring either.
+
+services:
+  lb:
+    image: nginx:1.27-alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./lb/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - client-api

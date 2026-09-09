@@ -5,6 +5,22 @@ import { Emitter } from '@socket.io/redis-emitter';
 const app = express();
 app.use(express.json());
 
+// --- CORS ---
+// The frontend (frontend/) calls this API directly from the browser, from a
+// different origin/port, so every response needs CORS headers. This is a
+// POC: allow any origin. A real deployment would restrict this to the known
+// frontend origin(s).
+app.use((req: Request, res: Response, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
+
 const PORT = process.env.PORT || 3001;
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://redis:6379';
 
